@@ -97,6 +97,16 @@ chmod +x install.sh
 ./install.sh
 ```
 
+```powershell
+# Windows PowerShell (also invoked by install.bat):
+.\scripts\install.ps1
+```
+
+> If you run the `.ps1` file directly (instead of via `install.bat`) and
+> PowerShell blocks it, that is Windows' execution policy. `install.bat`
+> already runs the script with `-ExecutionPolicy Bypass`, so using the
+> `.bat` wrapper is the simplest option on a default Windows install.
+
 **Step 3 — Open a fresh terminal** (PATH changes only apply to new
 sessions) and run:
 
@@ -207,6 +217,16 @@ uninstall.bat
 chmod +x uninstall.sh
 ./uninstall.sh
 ```
+
+```powershell
+# Windows PowerShell (also invoked by uninstall.bat):
+.\scripts\uninstall.ps1
+```
+
+> If you run the `.ps1` file directly (instead of via `uninstall.bat`) and
+> PowerShell blocks it, that is Windows' execution policy. `uninstall.bat`
+> already runs the script with `-ExecutionPolicy Bypass`, so using the
+> `.bat` wrapper is the simplest option on a default Windows install.
 
 Removes the virtual environment and PATH entry. You'll be asked whether to
 also delete app data (`~/.ytdownloader` — settings, history, logs); keep it
