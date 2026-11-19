@@ -7,6 +7,7 @@ timestamped, rotating logs to disk for debugging and support purposes.
 from __future__ import annotations
 
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -16,16 +17,23 @@ _LOGGER_NAME = "ytdownloader"
 _configured = False
 
 
+def _is_env_verbose() -> bool:
+    """Return True if ``YTDL_VERBOSE`` is set to a truthy value in the environment."""
+    val = os.environ.get("YTDL_VERBOSE", "").strip().lower()
+    return val in ("1", "true", "yes", "on")
+
+
 def setup_logging(verbose: bool = False) -> logging.Logger:
     """Configure and return the application logger.
 
     Safe to call multiple times; only configures handlers once.
     """
     global _configured
+    effective_verbose = verbose or _is_env_verbose()
     logger = logging.getLogger(_LOGGER_NAME)
 
     if _configured:
-        logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+        logger.setLevel(logging.DEBUG if effective_verbose else logging.INFO)
         return logger
 
     try:
@@ -45,7 +53,7 @@ def setup_logging(verbose: bool = False) -> logging.Logger:
         # silently; the app must never crash because of logging.
         pass
 
-    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    logger.setLevel(logging.DEBUG if effective_verbose else logging.INFO)
     _configured = True
     return logger
 

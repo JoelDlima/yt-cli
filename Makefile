@@ -1,4 +1,4 @@
-.PHONY: install dev test lint run clean
+.PHONY: install dev test run clean
 
 install:
 	pip install -e .

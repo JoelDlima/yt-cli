@@ -1,8 +1,8 @@
 """Reusable interactive prompt helpers with consistent navigation support.
 
 Every prompt in this module supports the navigation keywords ``back``,
-``cancel``, and ``help`` where applicable, returning ``None`` (or raising
-:class:`NavigationSignal`) so calling code can react uniformly.
+``cancel``, and ``help`` where applicable, returning ``None`` on
+back/cancel so calling code can react uniformly.
 """
 
 from __future__ import annotations

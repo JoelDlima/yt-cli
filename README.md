@@ -118,8 +118,8 @@ ytcli
 
 Prefer to manage the venv yourself? `python -m venv .venv`, activate it,
 then `pip install -e .` (extras: `pip install -e ".[extra]"` for clipboard
-detection and disk checks, `".[dev]"` for the test suite). With this path
-you must activate the venv in each new terminal.
+URL detection and `.env` file loading, `".[dev]"` for the test suite). With
+this path you must activate the venv in each new terminal.
 
 ## First run (walkthrough)
 
