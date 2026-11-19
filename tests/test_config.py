@@ -87,3 +87,23 @@ def test_validate_integrity_missing_file(tmp_path: Path):
     valid, error = manager.validate_integrity()
     assert valid is False
     assert error is not None
+
+
+def test_env_overrides_applied_when_config_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("YTDL_PROXY", "socks5://127.0.0.1:1080")
+    monkeypatch.setenv("YTDL_RATE_LIMIT", "500K")
+    manager = ConfigManager(path=tmp_path / "config.json")
+    settings = manager.load()
+    assert settings.proxy == "socks5://127.0.0.1:1080"
+    assert settings.rate_limit == "500K"
+
+
+def test_saved_settings_take_precedence_over_env_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    manager = ConfigManager(path=tmp_path / "config.json")
+    manager.load()
+    manager.update(proxy="http://saved-proxy:8080")
+
+    monkeypatch.setenv("YTDL_PROXY", "socks5://env-proxy:1080")
+    manager2 = ConfigManager(path=tmp_path / "config.json")
+    reloaded = manager2.load()
+    assert reloaded.proxy == "http://saved-proxy:8080"

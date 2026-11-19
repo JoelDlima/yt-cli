@@ -8,6 +8,7 @@ for scripting" requirement.
 from __future__ import annotations
 
 import sys
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -25,6 +26,7 @@ from ytdownloader.constants import (
 from ytdownloader.exceptions import YTDownloaderError
 from ytdownloader.history import get_history_manager
 from ytdownloader.logger import setup_logging
+from ytdownloader.models import DownloadResult, HistoryRecord
 from ytdownloader.ui.tables import video_details_table
 from ytdownloader.ui.theme import get_theme, make_console
 
@@ -35,6 +37,36 @@ app = typer.Typer(
     add_completion=True,
 )
 console = make_console("dark")
+
+
+def _record_cli_history(
+    result: DownloadResult,
+    *,
+    audio_only: bool,
+    resolution: str,
+    bitrate: str,
+) -> None:
+    """Persist the outcome of a non-interactive CLI download to history."""
+    if result.success and result.skipped:
+        status = HISTORY_STATUS_SKIPPED
+    elif result.success:
+        status = HISTORY_STATUS_SUCCESS
+    else:
+        status = HISTORY_STATUS_FAILED
+
+    get_history_manager().add(
+        HistoryRecord(
+            id=str(uuid.uuid4()),
+            title=result.title,
+            url=result.url,
+            type=DOWNLOAD_TYPE_AUDIO if audio_only else DOWNLOAD_TYPE_VIDEO,
+            resolution_or_bitrate=bitrate if audio_only else resolution,
+            output_path=result.output_path,
+            file_size=result.file_size,
+            status=status,
+            error_message=result.error_message,
+        )
+    )
 
 
 @app.callback(invoke_without_command=True)
@@ -95,29 +127,11 @@ def download(
     else:
         result = download_video(settings, info, resolution, out_dir)
 
-    history = get_history_manager()
-    from ytdownloader.models import HistoryRecord
-    import uuid
-
-    if result.success and result.skipped:
-        status = HISTORY_STATUS_SKIPPED
-    elif result.success:
-        status = HISTORY_STATUS_SUCCESS
-    else:
-        status = HISTORY_STATUS_FAILED
-
-    history.add(
-        HistoryRecord(
-            id=str(uuid.uuid4()),
-            title=result.title,
-            url=result.url,
-            type=DOWNLOAD_TYPE_AUDIO if audio_only else DOWNLOAD_TYPE_VIDEO,
-            resolution_or_bitrate=bitrate if audio_only else resolution,
-            output_path=result.output_path,
-            file_size=result.file_size,
-            status=status,
-            error_message=result.error_message,
-        )
+    _record_cli_history(
+        result,
+        audio_only=audio_only,
+        resolution=resolution,
+        bitrate=bitrate,
     )
 
     if result.success and result.skipped:
@@ -134,10 +148,10 @@ def download(
 @app.command()
 def batch(
     file: Path = typer.Argument(..., help="Path to a text/CSV/JSON file of URLs, or '-' for stdin."),
-    audio_only: bool = typer.Option(False, "--audio-only", "-a"),
-    resolution: str = typer.Option("best", "--resolution", "-r"),
-    bitrate: str = typer.Option("best", "--bitrate", "-b"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o"),
+    audio_only: bool = typer.Option(False, "--audio-only", "-a", help="Download audio as MP3 instead of video."),
+    resolution: str = typer.Option("best", "--resolution", "-r", help="Video resolution (e.g. 1080p)."),
+    bitrate: str = typer.Option("best", "--bitrate", "-b", help="Audio bitrate in kbps (e.g. 192)."),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory."),
 ) -> None:
     """Download a batch of URLs from a file or stdin, non-interactively."""
     from ytdownloader.audio import download_audio
@@ -164,6 +178,12 @@ def batch(
                 download_audio(settings, info, bitrate, out_dir)
                 if audio_only
                 else download_video(settings, info, resolution, out_dir)
+            )
+            _record_cli_history(
+                result,
+                audio_only=audio_only,
+                resolution=resolution,
+                bitrate=bitrate,
             )
             if result.success and result.skipped:
                 skipped += 1
@@ -228,7 +248,7 @@ def watch(
 @app.command()
 def search(
     query: str = typer.Argument(..., help="Search query."),
-    max_results: int = typer.Option(10, "--max-results", "-n"),
+    max_results: int = typer.Option(10, "--max-results", "-n", help="Maximum number of search results to display."),
 ) -> None:
     """Search YouTube and print results as a table (non-interactive)."""
     from ytdownloader.search import search_youtube
